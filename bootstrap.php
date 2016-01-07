@@ -83,6 +83,7 @@ END;
     $settings = $this->getSettings();
     $app_id = WordPressEscaper::escAttr($settings['app_id']);
     $secret = WordPressEscaper::escAttr($settings['secret']);
+    $enableChat = WordPressEscaper::escAttr($settings['enableChat']);
 
     if (empty($secret)) {
       $secret_row_style = 'display: none;';
@@ -90,6 +91,10 @@ END;
     } else {
       $secret_row_style = '';
       $secret_link_style = 'display: none;';
+    }
+    $checked_enableChat = '';
+    if(!empty($enableChat) && $enableChat === 'true'){
+      $checked_enableChat = 'checked';
     }
 
     $dismissable_message = '';
@@ -116,6 +121,10 @@ END;
         <tr id="intercom_secret_key_row" style="$secret_row_style">
           <th scope="row"><label for="intercom_secret">Secret Key (optional)</label></th>
           <td><input id="intercom_secret" name="intercom[secret]" type="text" value="$secret" placeholder="Secret Key"></td>
+        </tr>
+        <tr id="intercom_secret_key_row" >
+          <th scope="row"><label for="intercom_secret">Enable Chat</label></th>
+          <td><input id="intercom_enableChat" name="intercom[enableChat]" type="checkbox" value="true" $checked_enableChat></td>
         </tr>
       </tbody>
     </table>
@@ -313,6 +322,10 @@ class Validator
   {
     return $this->validate($this->input["secret"]);
   }
+  public function validEnableChat()
+  {
+    return ($this->validate($this->input["enableChat"]) === 'true')? 'true': 'false';
+  }
 
   private function validate($x)
   {
@@ -327,6 +340,12 @@ if (getenv('INTERCOM_PLUGIN_TEST') != '1') {
 function add_intercom_snippet()
 {
   $options = get_option('intercom');
+  if($options['enableChat'] === 'true'){
+    add_filter('intercom_snippet_rawdata',function($snippet){
+      $snippet['widget']['activator'] = '#IntercomDefaultWidget';
+      return $snippet;
+    });
+  }
   $snippet_settings = new SnippetSettings(
       (array) apply_filters('intercom_snippet_rawdata', array("app_id" => WordPressEscaper::escJS($options['app_id']))),
     WordPressEscaper::escJS($options['secret']),
@@ -354,7 +373,13 @@ function render_options_page()
     wp_die('You do not have sufficient permissions to access Intercom settings');
   }
   $options = get_option('intercom');
-  $settings_page = new SettingsPage(array("app_id" => $options['app_id'], "secret" => $options['secret']));
+  $settings_page = new SettingsPage(
+      array(
+          "app_id"      => $options['app_id'],
+          "secret"      => $options['secret'],
+          "enableChat"  => isset($options['enableChat'])? $options['enableChat'] : 'false'
+      )
+  );
   echo $settings_page->htmlUnclosed();
   wp_nonce_field('intercom-update');
   echo $settings_page->htmlClosed();
@@ -365,7 +390,7 @@ function settings() {
   if (isset($_POST['_wpnonce']) and wp_verify_nonce($_POST[ '_wpnonce'], 'intercom-update')
       and isset($_POST[ 'intercom-submit' ] ) and current_user_can('manage_options')) {
     $validator = new Validator($_POST["intercom"], function($x) { return wp_kses(trim($x), array()); });
-    update_option("intercom", array("app_id" => $validator->validAppId(), "secret" => $validator->validSecret()));
+    update_option("intercom", array("app_id" => $validator->validAppId(), "secret" => $validator->validSecret(), "enableChat" => $validator->validEnableChat()));
     wp_safe_redirect(admin_url('options-general.php?page=intercom&saved=1'));
   }
 }

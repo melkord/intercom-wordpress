@@ -107,7 +107,7 @@ class SettingsPage {
           <td><input id="intercom_secret" name="intercom[secret]" type="text" value="$secret" placeholder="Secret Key"></td>
         </tr>
         <tr id="intercom_secret_key_row" >
-          <th scope="row"><label for="intercom_secret">Enable Chat</label></th>
+          <th scope="row"><label for="intercom_enableChat">Enable Chat</label></th>
           <td><input id="intercom_enableChat" name="intercom[enableChat]" type="checkbox" value="true" $checked_enableChat></td>
         </tr>
       </tbody>

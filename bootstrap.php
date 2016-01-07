@@ -309,15 +309,15 @@ if ( getenv( 'INTERCOM_PLUGIN_TEST' ) != '1' ) {
 
 function add_intercom_snippet() {
 	$options = get_option( 'intercom' );
-	if ( $options['enableChat'] === 'true' ) {
-		add_filter( 'intercom_snippet_rawdata', function ( $snippet ) {
-			$snippet['widget']['activator'] = '#IntercomDefaultWidget';
+	$raw_data = array(
+		"app_id" => WordPressEscaper::escJS( $options['app_id'] )
+	);
 
-			return $snippet;
-		} );
+	if ( $options['enableChat'] === 'true' ) {
+		$raw_data['widget']['activator'] = '#IntercomDefaultWidget';
 	}
 	$snippet_settings = new SnippetSettings(
-		(array) apply_filters( 'intercom_snippet_rawdata', array( "app_id" => WordPressEscaper::escJS( $options['app_id'] ) ) ),
+		(array) apply_filters( 'intercom_snippet_rawdata', $raw_data),
 		WordPressEscaper::escJS( $options['secret'] ),
 		wp_get_current_user()
 	);
